@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>321Modular — Checklist de Qualidade</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --green: #1a6b3c;
+    --green-light: #e8f5ee;
+    --green-mid: #2d8a52;
+    --gray-50: #f8f8f7;
+    --gray-100: #efefed;
+    --gray-300: #c8c7c2;
+    --gray-500: #888780;
+    --gray-800: #2c2c2a;
+    --amber: #854F0B;
+    --amber-light: #FAEEDA;
+    --red: #A32D2D;
+    --red-light: #FCEBEB;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  header {
+    background: var(--green);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.15);
+  }
+  header .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  header .subtitle {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 1px;
+  }
+  header .spacer { flex: 1; }
+  header .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    opacity: 0.9;
+  }
+  .progress-bar {
+    width: 80px;
+    height: 4px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: white;
+    border-radius: 99px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  .container { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem 6rem; }
+
+  .info-card {
+    background: white;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .info-card h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.85rem;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field-row.single { grid-template-columns: 1fr; }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  input[type="text"], input[type="date"], textarea, select {
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--gray-800);
+    background: white;
+    width: 100%;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  input:focus, textarea:focus { border-color: var(--green-mid); box-shadow: 0 0 0 3px rgba(45,138,82,0.12); }
+
+  .phase {
+    background: white;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .phase-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: white;
+    background: var(--green);
+  }
+  .phase-title { font-size: 15px; font-weight: 600; }
+  .phase-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--gray-500);
+    background: var(--gray-100);
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .phase-count.done { background: var(--green-light); color: var(--green); }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 0.9rem 1.25rem 0.4rem;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 0.65rem 1.25rem;
+    border-bottom: 1px solid var(--gray-100);
+    cursor: pointer;
+    transition: background 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .check-item:last-of-type { border-bottom: none; }
+  .check-item:active { background: var(--gray-50); }
+
+  .check-item input[type="checkbox"] { display: none; }
+  .check-box {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--gray-300);
+    border-radius: 5px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    transition: all 0.15s;
+  }
+  .check-box svg { display: none; }
+  .check-item.checked .check-box {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .check-item.checked .check-box svg { display: block; }
+  .check-item.checked .check-text { color: var(--gray-500); text-decoration: line-through; text-decoration-color: var(--gray-300); }
+  .check-text { font-size: 13.5px; line-height: 1.4; user-select: none; }
+
+  .warn-box {
+    margin: 0 1.25rem 0.75rem;
+    background: var(--amber-light);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 12.5px;
+    color: var(--amber);
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+  }
+
+  .photos-section {
+    padding: 0.5rem 1.25rem 1rem;
+    border-top: 1px solid var(--gray-100);
+  }
+  .photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin-top: 0.6rem;
+  }
+  .photo-slot {
+    border: 1.5px dashed var(--gray-300);
+    border-radius: var(--radius-sm);
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    padding: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-slot:hover { border-color: var(--green-mid); background: var(--green-light); }
+  .photo-slot.filled { border-style: solid; border-color: var(--green-mid); }
+  .photo-slot input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .photo-slot img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 4px;
+  }
+  .photo-slot .overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; opacity: 0; transition: opacity 0.15s;
+  }
+  .photo-slot:hover .overlay { opacity: 1; }
+  .photo-slot .overlay span { color: white; font-size: 11px; font-weight: 600; }
+  .photo-label {
+    font-size: 11px;
+    color: var(--gray-500);
+    text-align: center;
+    line-height: 1.3;
+  }
+  .photo-icon {
+    font-size: 22px;
+    color: var(--gray-300);
+  }
+
+  .obs-section { padding: 0 1.25rem 1rem; }
+  .obs-section textarea {
+    resize: vertical;
+    min-height: 70px;
+    font-size: 13px;
+  }
+
+  .bottom-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: white;
+    border-top: 1px solid var(--gray-100);
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    z-index: 100;
+  }
+  .progress-text { font-size: 13px; color: var(--gray-500); flex: 1; }
+  .progress-text strong { color: var(--gray-800); }
+
+  .btn {
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--green-mid); }
+  .btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; }
+  .btn-outline {
+    background: white;
+    color: var(--gray-800);
+    border: 1px solid var(--gray-300);
+  }
+  .btn-outline:hover { background: var(--gray-50); }
+
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--gray-800);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 480px) {
+    .field-row { grid-template-columns: 1fr; }
+    .photos-grid { grid-template-columns: repeat(2, 1fr); }
+    .bottom-bar { flex-wrap: wrap; }
+    .progress-text { width: 100%; order: -1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">321Modular</div>
+    <div class="subtitle">Checklist de Qualidade</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <span id="progressText">0%</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Dados da obra -->
+  <div class="info-card">
+    <h2>Dados da obra</h2>
+    <div class="field-row single" style="margin-bottom:12px">
+      <div class="field">
+        <label>Nome do cliente</label>
+        <input type="text" id="cliente" placeholder="Ex: João Silva">
+      </div>
+    </div>
+    <div class="field-row" style="margin-bottom:12px">
+      <div class="field">
+        <label>Responsável pela montagem</label>
+        <input type="text" id="responsavel" placeholder="Nome do líder">
+      </div>
+      <div class="field">
+        <label>Data de conclusão</label>
+        <input type="date" id="data">
+      </div>
+    </div>
+    <div class="field-row single">
+      <div class="field">
+        <label>Localização / Endereço da obra</label>
+        <input type="text" id="local" placeholder="Cidade, estado ou endereço">
+      </div>
+    </div>
+  </div>
+
+  <!-- F1 -->
+  <div class="phase" id="phase1">
+    <div class="phase-header">
+      <div class="phase-num">F1</div>
+      <div class="phase-title">Infraestrutura — blocos de concreto</div>
+      <div class="phase-count" id="count1">0/6</div>
+    </div>
+    <div class="section-label">Itens de verificação</div>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Blocos nivelados (nível de bolha conferido em todos)</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Esquadro da disposição dos blocos conferido</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Alinhamento entre blocos (fio ou régua) — sem desvios</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Prumo dos blocos conferido onde aplicável</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Profundidade de fixação na terra adequada — blocos firmes, sem movimento</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Concretagem executada nos blocos que exigiram (conforme característica do terreno)</span></label>
+    <div class="photos-section">
+      <div class="section-label" style="padding:0 0 0.4rem">Fotos obrigatórias</div>
+      <div class="photos-grid">
+        <div class="photo-slot" id="p1_1"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p1_1')"><div class="photo-icon">📷</div><div class="photo-label">Vista geral dos blocos instalados</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p1_2"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p1_2')"><div class="photo-icon">📷</div><div class="photo-label">Nível apoiado sobre bloco</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p1_3"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p1_3')"><div class="photo-icon">📷</div><div class="photo-label">Detalhe fixação no solo / concretagem</div><div class="overlay"><span>Trocar foto</span></div></div>
+      </div>
+    </div>
+    <div class="obs-section">
+      <label style="display:block;margin-bottom:5px">Observações (opcional)</label>
+      <textarea id="obs1" placeholder="Alguma observação sobre esta fase..."></textarea>
+    </div>
+  </div>
+
+  <!-- F2 -->
+  <div class="phase" id="phase2">
+    <div class="phase-header">
+      <div class="phase-num">F2</div>
+      <div class="phase-title">Estrutura do chalé</div>
+      <div class="phase-count" id="count2">0/4</div>
+    </div>
+    <div class="section-label">Itens de verificação</div>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Junção entre módulos de piso — sem frestas, alinhada e fixada</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Junção entre painéis de parede — sem folgas ou desvios visíveis</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Encontros de lâminas do banheiro executados corretamente (sem abertura)</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Estrutura sem empenamentos, torções ou deformações visíveis</span></label>
+    <div class="warn-box">⚠️ Ponto crítico: correções após acabamento são muito mais custosas. Não avançar sem conformidade total.</div>
+    <div class="photos-section">
+      <div class="section-label" style="padding:0 0 0.4rem">Fotos obrigatórias</div>
+      <div class="photos-grid">
+        <div class="photo-slot" id="p2_1"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p2_1')"><div class="photo-icon">📷</div><div class="photo-label">Junção de pisos (detalhe)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p2_2"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p2_2')"><div class="photo-icon">📷</div><div class="photo-label">Junção entre paredes (detalhe)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p2_3"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p2_3')"><div class="photo-icon">📷</div><div class="photo-label">Lâminas do banheiro (encontros)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p2_4"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p2_4')"><div class="photo-icon">📷</div><div class="photo-label">Vista geral da estrutura montada</div><div class="overlay"><span>Trocar foto</span></div></div>
+      </div>
+    </div>
+    <div class="obs-section">
+      <label style="display:block;margin-bottom:5px">Observações (opcional)</label>
+      <textarea id="obs2" placeholder="Alguma observação sobre esta fase..."></textarea>
+    </div>
+  </div>
+
+  <!-- F3 -->
+  <div class="phase" id="phase3">
+    <div class="phase-header">
+      <div class="phase-num">F3</div>
+      <div class="phase-title">Esquadrias</div>
+      <div class="phase-count" id="count3">0/5</div>
+    </div>
+    <div class="section-label">Itens de verificação</div>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Todas as portas abrem, fecham e trancam sem esforço ou folga excessiva</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Todas as janelas deslizam / abrem corretamente e vedadas</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Esquadrias niveladas e prumo conferido</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Acabamentos das esquadrias sem lascas, amassados ou folgas</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Silicone aplicado em todas as vistas externas das esquadrias — contínuo e sem falhas</span></label>
+    <div class="photos-section">
+      <div class="section-label" style="padding:0 0 0.4rem">Fotos obrigatórias</div>
+      <div class="photos-grid">
+        <div class="photo-slot" id="p3_1"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p3_1')"><div class="photo-icon">📷</div><div class="photo-label">Vista externa de cada porta (silicone visível)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p3_2"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p3_2')"><div class="photo-icon">📷</div><div class="photo-label">Vista externa de cada janela (silicone visível)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p3_3"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p3_3')"><div class="photo-icon">📷</div><div class="photo-label">Detalhe do cordão de silicone</div><div class="overlay"><span>Trocar foto</span></div></div>
+      </div>
+    </div>
+    <div class="obs-section">
+      <label style="display:block;margin-bottom:5px">Observações (opcional)</label>
+      <textarea id="obs3" placeholder="Alguma observação sobre esta fase..."></textarea>
+    </div>
+  </div>
+
+  <!-- F4 -->
+  <div class="phase" id="phase4">
+    <div class="phase-header">
+      <div class="phase-num">F4</div>
+      <div class="phase-title">Acabamentos</div>
+      <div class="phase-count" id="count4">0/6</div>
+    </div>
+    <div class="section-label">Itens de verificação</div>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Vistas instaladas — recortes executados em 45º (sem folgas nos encontros)</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Meia cana instalada — recortes em 45º e colagem com Titebond nas externas</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Cimalhas instaladas e alinhadas — recortes e encontros conferidos</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Rodapés instalados — sem folgas no piso ou nas quinas</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Cola Titebond aplicada nas vistas e meia cana externas</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Todos os acabamentos sem manchas, lascas ou marcas de ferramenta</span></label>
+    <div class="photos-section">
+      <div class="section-label" style="padding:0 0 0.4rem">Fotos obrigatórias</div>
+      <div class="photos-grid">
+        <div class="photo-slot" id="p4_1"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p4_1')"><div class="photo-icon">📷</div><div class="photo-label">Quina de vista em 45º (detalhe)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p4_2"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p4_2')"><div class="photo-icon">📷</div><div class="photo-label">Meia cana externa colada</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p4_3"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p4_3')"><div class="photo-icon">📷</div><div class="photo-label">Rodapés (quina e comprimento)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p4_4"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p4_4')"><div class="photo-icon">📷</div><div class="photo-label">Vista geral interna dos acabamentos</div><div class="overlay"><span>Trocar foto</span></div></div>
+      </div>
+    </div>
+    <div class="obs-section">
+      <label style="display:block;margin-bottom:5px">Observações (opcional)</label>
+      <textarea id="obs4" placeholder="Alguma observação sobre esta fase..."></textarea>
+    </div>
+  </div>
+
+  <!-- F5 -->
+  <div class="phase" id="phase5">
+    <div class="phase-header">
+      <div class="phase-num">F5</div>
+      <div class="phase-title">Telhado</div>
+      <div class="phase-count" id="count5">0/6</div>
+    </div>
+    <div class="section-label">Itens de verificação</div>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Telhas verificadas — sem arranhados, amassados ou quebras</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Parafuso em todas as telhas — sem telha sem fixação</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Todos os parafusos firmes — sem parafusos soltos ou afrouxados</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Galvanizador líquido aplicado em todos os recortes das telhas</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Alinhamento das telhas conferido — sem sobreposição incorreta</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Cumeeira e rufos instalados e vedados</span></label>
+    <div class="photos-section">
+      <div class="section-label" style="padding:0 0 0.4rem">Fotos obrigatórias</div>
+      <div class="photos-grid">
+        <div class="photo-slot" id="p5_1"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p5_1')"><div class="photo-icon">📷</div><div class="photo-label">Vista geral do telhado (de cima)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p5_2"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p5_2')"><div class="photo-icon">📷</div><div class="photo-label">Detalhe dos parafusos nas telhas</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p5_3"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p5_3')"><div class="photo-icon">📷</div><div class="photo-label">Recortes com galvanizador aplicado</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p5_4"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p5_4')"><div class="photo-icon">📷</div><div class="photo-label">Cumeeira finalizada</div><div class="overlay"><span>Trocar foto</span></div></div>
+      </div>
+    </div>
+    <div class="obs-section">
+      <label style="display:block;margin-bottom:5px">Observações (opcional)</label>
+      <textarea id="obs5" placeholder="Alguma observação sobre esta fase..."></textarea>
+    </div>
+  </div>
+
+  <!-- F6 -->
+  <div class="phase" id="phase6">
+    <div class="phase-header">
+      <div class="phase-num">F6</div>
+      <div class="phase-title">Ancoragem do chalé nos blocos</div>
+      <div class="phase-count" id="count6">0/3</div>
+    </div>
+    <div class="section-label">Itens de verificação</div>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Piso fixado aos blocos de concreto em todos os pontos de apoio</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Fixadores / parafusos de ancoragem conferidos — sem nenhum ausente</span></label>
+    <label class="check-item" onclick="toggle(this)"><input type="checkbox"><div class="check-box"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="check-text">Espaçamento entre piso e solo adequado e uniforme</span></label>
+    <div class="photos-section">
+      <div class="section-label" style="padding:0 0 0.4rem">Fotos obrigatórias</div>
+      <div class="photos-grid">
+        <div class="photo-slot" id="p6_1"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p6_1')"><div class="photo-icon">📷</div><div class="photo-label">Ponto de ancoragem (detalhe por bloco)</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p6_2"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p6_2')"><div class="photo-icon">📷</div><div class="photo-label">Vista lateral mostrando espaçamento</div><div class="overlay"><span>Trocar foto</span></div></div>
+        <div class="photo-slot" id="p6_3"><input type="file" accept="image/*" capture="environment" onchange="loadPhoto(this,'p6_3')"><div class="photo-icon">📷</div><div class="photo-label">Vista geral da base do chalé</div><div class="overlay"><span>Trocar foto</span></div></div>
+      </div>
+    </div>
+    <div class="obs-section">
+      <label style="display:block;margin-bottom:5px">Observações (opcional)</label>
+      <textarea id="obs6" placeholder="Alguma observação sobre esta fase..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottom-bar">
+  <div class="progress-text">
+    <strong id="checkedCount">0</strong> de <strong>29</strong> itens conferidos
+  </div>
+  <button class="btn btn-outline" onclick="resetForm()">Limpar</button>
+  <button class="btn btn-primary" id="btnPDF" onclick="gerarPDF()">
+    ↓ Gerar PDF
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const phaseTotals = {1:6, 2:4, 3:5, 4:6, 5:6, 6:3};
+const photoData = {};
+
+function toggle(el) {
+  el.classList.toggle('checked');
+  updateProgress();
+}
+
+function updateProgress() {
+  let total = 0, checked = 0;
+  for (let p = 1; p <= 6; p++) {
+    const items = document.querySelectorAll(`#phase${p} .check-item`);
+    const done = document.querySelectorAll(`#phase${p} .check-item.checked`).length;
+    const t = phaseTotals[p];
+    total += t;
+    checked += done;
+    const el = document.getElementById(`count${p}`);
+    el.textContent = `${done}/${t}`;
+    el.className = 'phase-count' + (done === t ? ' done' : '');
+  }
+  const pct = Math.round(checked / total * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = pct + '%';
+  document.getElementById('checkedCount').textContent = checked;
+}
+
+function loadPhoto(input, slotId) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const slot = document.getElementById(slotId);
+    let img = slot.querySelector('img');
+    if (!img) { img = document.createElement('img'); slot.appendChild(img); }
+    img.src = e.target.result;
+    slot.classList.add('filled');
+    const icon = slot.querySelector('.photo-icon');
+    const label = slot.querySelector('.photo-label');
+    if (icon) icon.style.display = 'none';
+    if (label) label.style.display = 'none';
+    photoData[slotId] = { dataUrl: e.target.result, label: slot.querySelector('.photo-label') ? slot.querySelector('.photo-label').textContent : slotId };
+  };
+  reader.readAsDataURL(file);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function resetForm() {
+  if (!confirm('Limpar todo o formulário?')) return;
+  document.querySelectorAll('.check-item.checked').forEach(el => el.classList.remove('checked'));
+  document.querySelectorAll('input[type="text"], input[type="date"], textarea').forEach(el => el.value = '');
+  document.querySelectorAll('.photo-slot').forEach(slot => {
+    slot.classList.remove('filled');
+    const img = slot.querySelector('img');
+    if (img) img.remove();
+    const icon = slot.querySelector('.photo-icon');
+    const label = slot.querySelector('.photo-label');
+    if (icon) icon.style.display = '';
+    if (label) label.style.display = '';
+  });
+  Object.keys(photoData).forEach(k => delete photoData[k]);
+  updateProgress();
+  showToast('Formulário limpo');
+}
+
+async function gerarPDF() {
+  const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
+  const responsavel = document.getElementById('responsavel').value.trim() || 'Não informado';
+  const data = document.getElementById('data').value;
+  const local = document.getElementById('local').value.trim() || 'Não informado';
+  const dataFmt = data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada';
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, margin = 14;
+  let y = 0;
+
+  const green = [26, 107, 60];
+  const greenLight = [232, 245, 238];
+  const gray800 = [44, 44, 42];
+  const gray500 = [136, 135, 128];
+  const gray100 = [239, 239, 237];
+  const amber = [133, 79, 11];
+  const amberLight = [250, 238, 218];
+  const white = [255, 255, 255];
+
+  function newPage() {
+    doc.addPage();
+    y = 14;
+  }
+
+  function checkPage(needed = 20) {
+    if (y + needed > 275) newPage();
+  }
+
+  // Header
+  doc.setFillColor(...green);
+  doc.rect(0, 0, W, 28, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('321Modular', margin, 12);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Relatório de Qualidade — Checklist de Conclusão de Obra', margin, 19);
+  doc.setFontSize(8);
+  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}`, W - margin, 19, {align:'right'});
+  y = 36;
+
+  // Dados da obra
+  doc.setFillColor(...greenLight);
+  doc.roundedRect(margin, y, W - margin*2, 32, 2, 2, 'F');
+  doc.setTextColor(...gray500);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DADOS DA OBRA', margin + 4, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...gray800);
+  const col1 = margin + 4, col2 = W/2 + 4;
+  doc.setFont('helvetica', 'bold'); doc.text('Cliente:', col1, y+13); doc.setFont('helvetica', 'normal'); doc.text(cliente, col1+18, y+13);
+  doc.setFont('helvetica', 'bold'); doc.text('Local:', col2, y+13); doc.setFont('helvetica', 'normal'); doc.text(local, col2+12, y+13);
+  doc.setFont('helvetica', 'bold'); doc.text('Responsável:', col1, y+21); doc.setFont('helvetica', 'normal'); doc.text(responsavel, col1+28, y+21);
+  doc.setFont('helvetica', 'bold'); doc.text('Data:', col2, y+21); doc.setFont('helvetica', 'normal'); doc.text(dataFmt, col2+12, y+21);
+  y += 40;
+
+  // Resumo geral
+  const totalItems = 29;
+  const checkedItems = document.querySelectorAll('.check-item.checked').length;
+  const pct = Math.round(checkedItems / totalItems * 100);
+  const statusColor = pct === 100 ? green : pct >= 80 ? amber : [163, 45, 45];
+  const statusText = pct === 100 ? 'APROVADO' : pct >= 80 ? 'PENDÊNCIAS' : 'REPROVADO';
+
+  doc.setFillColor(...gray100);
+  doc.roundedRect(margin, y, W - margin*2, 14, 2, 2, 'F');
+  doc.setTextColor(...gray500);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${checkedItems} de ${totalItems} itens conferidos (${pct}%)`, margin+4, y+6);
+  doc.setFillColor(...statusColor);
+  doc.roundedRect(W - margin - 28, y+3, 26, 8, 2, 2, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(7);
+  doc.text(statusText, W - margin - 15, y+8, {align:'center'});
+  y += 20;
+
+  // Fases
+  const phases = [
+    { num:'F1', title:'Infraestrutura — Blocos de Concreto', total:6, obsId:'obs1',
+      items:['Blocos nivelados (nível de bolha conferido em todos)','Esquadro da disposição dos blocos conferido','Alinhamento entre blocos (fio ou régua) — sem desvios','Prumo dos blocos conferido onde aplicável','Profundidade de fixação na terra adequada — blocos firmes, sem movimento','Concretagem executada nos blocos que exigiram'],
+      photos:['p1_1','p1_2','p1_3'] },
+    { num:'F2', title:'Estrutura do Chalé', total:4, obsId:'obs2',
+      items:['Junção entre módulos de piso — sem frestas, alinhada e fixada','Junção entre painéis de parede — sem folgas ou desvios visíveis','Encontros de lâminas do banheiro executados corretamente (sem abertura)','Estrutura sem empenamentos, torções ou deformações visíveis'],
+      photos:['p2_1','p2_2','p2_3','p2_4'] },
+    { num:'F3', title:'Esquadrias', total:5, obsId:'obs3',
+      items:['Todas as portas abrem, fecham e trancam sem esforço ou folga excessiva','Todas as janelas deslizam / abrem corretamente e vedadas','Esquadrias niveladas e prumo conferido','Acabamentos das esquadrias sem lascas, amassados ou folgas','Silicone aplicado em todas as vistas externas — contínuo e sem falhas'],
+      photos:['p3_1','p3_2','p3_3'] },
+    { num:'F4', title:'Acabamentos', total:6, obsId:'obs4',
+      items:['Vistas instaladas — recortes executados em 45º (sem folgas nos encontros)','Meia cana instalada — recortes em 45º e colagem com Titebond nas externas','Cimalhas instaladas e alinhadas — recortes e encontros conferidos','Rodapés instalados — sem folgas no piso ou nas quinas','Cola Titebond aplicada nas vistas e meia cana externas','Todos os acabamentos sem manchas, lascas ou marcas de ferramenta'],
+      photos:['p4_1','p4_2','p4_3','p4_4'] },
+    { num:'F5', title:'Telhado', total:6, obsId:'obs5',
+      items:['Telhas verificadas — sem arranhados, amassados ou quebras','Parafuso em todas as telhas — sem telha sem fixação','Todos os parafusos firmes — sem parafusos soltos ou afrouxados','Galvanizador líquido aplicado em todos os recortes das telhas','Alinhamento das telhas conferido — sem sobreposição incorreta','Cumeeira e rufos instalados e vedados'],
+      photos:['p5_1','p5_2','p5_3','p5_4'] },
+    { num:'F6', title:'Ancoragem do Chalé nos Blocos', total:3, obsId:'obs6',
+      items:['Piso fixado aos blocos de concreto em todos os pontos de apoio','Fixadores / parafusos de ancoragem conferidos — sem nenhum ausente','Espaçamento entre piso e solo adequado e uniforme'],
+      photos:['p6_1','p6_2','p6_3'] },
+  ];
+
+  for (let pi = 0; pi < phases.length; pi++) {
+    const ph = phases[pi];
+    const phaseEl = document.getElementById(`phase${pi+1}`);
+    const checkedInPhase = phaseEl.querySelectorAll('.check-item.checked').length;
+
+    checkPage(24);
+
+    // Phase header
+    doc.setFillColor(...green);
+    doc.roundedRect(margin, y, W - margin*2, 10, 2, 2, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${ph.num} — ${ph.title}`, margin+4, y+7);
+    doc.text(`${checkedInPhase}/${ph.total}`, W-margin-4, y+7, {align:'right'});
+    y += 14;
+
+    // Items
+    for (let i = 0; i < ph.items.length; i++) {
+      checkPage(8);
+      const itemEl = phaseEl.querySelectorAll('.check-item')[i];
+      const isChecked = itemEl && itemEl.classList.contains('checked');
+
+      if (i % 2 === 0) {
+        doc.setFillColor(...gray100);
+        doc.rect(margin, y-1, W-margin*2, 7.5, 'F');
+      }
+
+      // checkbox
+      doc.setDrawColor(...gray500);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin+2, y+0.5, 5, 5, 0.8, 0.8, 'D');
+      if (isChecked) {
+        doc.setFillColor(...green);
+        doc.roundedRect(margin+2, y+0.5, 5, 5, 0.8, 0.8, 'F');
+        doc.setTextColor(...white);
+        doc.setFontSize(7);
+        doc.text('✓', margin+4.5, y+4.8, {align:'center'});
+      }
+
+      doc.setTextColor(isChecked ? ...gray500 : ...gray800);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(ph.items[i], W - margin*2 - 14);
+      doc.text(lines, margin+10, y+4.5);
+      y += lines.length > 1 ? 11 : 8;
+    }
+
+    // Obs
+    const obs = document.getElementById(ph.obsId).value.trim();
+    if (obs) {
+      checkPage(14);
+      doc.setFillColor(...amberLight);
+      doc.roundedRect(margin, y, W-margin*2, 12, 2, 2, 'F');
+      doc.setTextColor(...amber);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Observação:', margin+3, y+5);
+      doc.setFont('helvetica', 'normal');
+      const obsLines = doc.splitTextToSize(obs, W-margin*2-30);
+      doc.text(obsLines, margin+26, y+5);
+      y += 14 + (obsLines.length-1)*4;
+    }
+
+    y += 6;
+  }
+
+  // Fotos — página(s) separada(s)
+  const photoKeys = Object.keys(photoData);
+  if (photoKeys.length > 0) {
+    newPage();
+    doc.setFillColor(...green);
+    doc.rect(0, 0, W, 16, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Relatório Fotográfico', margin, 11);
+    y = 24;
+
+    const imgW = (W - margin*2 - 8) / 2;
+    const imgH = 52;
+    let col = 0;
+
+    for (const key of photoKeys) {
+      const pd = photoData[key];
+      checkPage(imgH + 16);
+
+      const x = margin + col * (imgW + 8);
+      try {
+        doc.addImage(pd.dataUrl, 'JPEG', x, y, imgW, imgH, undefined, 'MEDIUM');
+      } catch(e) {
+        doc.setFillColor(...gray100);
+        doc.rect(x, y, imgW, imgH, 'F');
+        doc.setTextColor(...gray500);
+        doc.setFontSize(8);
+        doc.text('Foto não disponível', x + imgW/2, y + imgH/2, {align:'center'});
+      }
+      doc.setDrawColor(...gray500);
+      doc.setLineWidth(0.2);
+      doc.rect(x, y, imgW, imgH);
+
+      // label
+      const phaseNum = key.split('_')[0];
+      const phNum = parseInt(phaseNum.replace('p',''));
+      const phName = phases[phNum-1]?.title || '';
+      doc.setTextColor(...gray800);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`F${phNum}`, x, y + imgH + 5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...gray500);
+      const lbl = doc.splitTextToSize(pd.label, imgW - 8);
+      doc.text(lbl, x + 8, y + imgH + 5);
+
+      col++;
+      if (col === 2) { col = 0; y += imgH + 16; }
+    }
+  }
+
+  // Assinatura
+  checkPage(30);
+  y += 8;
+  doc.setDrawColor(...gray500);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, margin + 70, y);
+  doc.setTextColor(...gray500);
+  doc.setFontSize(8);
+  doc.text('Assinatura do responsável pela montagem', margin, y+5);
+  doc.text(responsavel, margin, y+10);
+  doc.text(dataFmt, margin, y+15);
+
+  const filename = `321Modular_${cliente.replace(/\s+/g,'_')}_${data || 'checklist'}.pdf`;
+  doc.save(filename);
+  showToast('PDF gerado com sucesso!');
+}
+</script>
+</body>
+</html>
